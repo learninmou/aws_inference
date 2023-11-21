@@ -35,12 +35,23 @@ def _check_auth(request : Request):
     return True
 
 _request_index = 0
-def _fetch_endpoint():
+def _fetch_endpoint(target_model : str):
+    if not target_model:
+        return ''
+    target_model = target_model.lower()
+    cadidates = lazy_readconfig(os.environ['ENV_AWS_ENDPOINTS_FILE'])
+    valid_endpoints = []
+    for cadidate in cadidates:
+        model, endpoint = cadidate.split(' ')
+        if model.lower() == target_model:
+            valid_endpoints.append(endpoint)
+
+    length = len(valid_endpoints)
+    if length <= 0:
+        return ''
+
     global _request_index
-    endpoints = lazy_readconfig(os.environ['ENV_AWS_ENDPOINTS_FILE'])
-    length = len(endpoints)
-    assert length > 0, 'empty endpoints'
-    result = endpoints[_request_index % length]
+    result = valid_endpoints[_request_index % length]
     # TODO : coroutine safe
     _request_index += 1
     return result
@@ -49,7 +60,7 @@ def _fetch_endpoint():
 def startup_service():
     logger.info('service startup')
     # init config dict
-    endpoint = _fetch_endpoint()
+    lazy_readconfig(os.environ['ENV_AWS_ENDPOINTS_FILE'])
 
 @app.on_event('shutdown')
 def shutdown_service():
@@ -69,9 +80,13 @@ async def create_chat_completions(request : Request):
     body = await request.json()
     streaming = True if body.get('stream') else False
 
-    payload_json = json.dumps(body)
+    model = body.get('model')
+    endpoint = _fetch_endpoint(model)
+    if not endpoint:
+        return JSONResponse(status_code = status.HTTP_400_BAD_REQUEST,
+                content=jsonable_encoder({'ERROR': 'no valid endpoint for target model'}))
 
-    endpoint = _fetch_endpoint()
+    payload_json = json.dumps(body)
 
     if streaming:
         response = client.invoke_endpoint_with_response_stream(
