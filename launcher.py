@@ -61,6 +61,7 @@ def startup_service():
     logger.info('service startup')
     # init config dict
     lazy_readconfig(os.environ['ENV_AWS_ENDPOINTS_FILE'])
+    _set_logger()
 
 @app.on_event('shutdown')
 def shutdown_service():
@@ -121,7 +122,7 @@ async def create_chat_completions(request : Request):
 def check_health():
     return 'OK'
 
-def set_logger():
+def _set_logger():
     log_dir = os.environ['ENV_LOG_DIR']
     os.makedirs(log_dir, exist_ok=True)
     logging.basicConfig(
@@ -134,9 +135,20 @@ def set_logger():
                 mode = 'a',
                 maxBytes = 16 * 1024 * 1024,
                 backupCount = 32)
-        ]
-        )
-set_logger()
+        ])
+
+    #uvicorn logger
+    uvicorn_logger = logging.getLogger("uvicorn.access")
+    uvicorn_logger.handlers.clear()
+    uvicorn_logger.addHandler(
+            logging.handlers.RotatingFileHandler(os.path.join(log_dir, 'access.log'.format(os.getpid())),
+                mode = 'a',
+                maxBytes = 16 * 1024 * 1024,
+                backupCount = 32)
+            )
+    console_formatter = uvicorn.logging.AccessFormatter('%(asctime)s : %(message)s')
+    uvicorn_logger.handlers[0].setFormatter(console_formatter)
+
 
 if __name__ == '__main__':
     uvicorn.run(
