@@ -7,11 +7,10 @@ import boto3
 timestr = '{}'.format(int(time.time()))
 print(f'timestr={timestr}')
 
-sess = sagemaker.Session()
 sagemaker_client = boto3.client('sagemaker')
 
 model_name = f'inference-model-yi-34b-chat-{timestr}'
-instance_type = 'ml.p4de.24xlarge'
+#instance_type = 'ml.p4de.24xlarge'
 #instance_type = 'ml.p4d.24xlarge'
 #instance_type = 'ml.c5.large'
 
@@ -19,7 +18,7 @@ create_model_response = sagemaker_client.create_model(
     ModelName = model_name,
     ExecutionRoleArn = 'arn:aws:iam::601449239237:role/SageMakerExecutionRole',
     PrimaryContainer = {
-        "Image": "601449239237.dkr.ecr.us-west-2.amazonaws.com/turing_serving_infra:entrypoint_0.0.4",
+        "Image": "601449239237.dkr.ecr.us-west-2.amazonaws.com/turing_serving_infra:entrypoint_0.0.5",
         "ModelDataSource": {
             "S3DataSource": {
                 "S3Uri": f's3://turing-infer-files/models/yi-34b-sft-v08/',
