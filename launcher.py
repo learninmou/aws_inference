@@ -13,6 +13,12 @@ from typing import Optional
 from starlette.background import BackgroundTask
 from fastapi.encoders import jsonable_encoder
 from config import lazy_readconfig
+from botocore.config import Config
+
+client_config = Config(
+        connect_timeout = 180,
+        read_timeout = 180,
+        )
 
 logger = logging.getLogger(__name__)
 app = FastAPI()
@@ -78,6 +84,7 @@ async def create_chat_completions(request : Request):
             region_name = 'us-west-2',
             aws_access_key_id=os.environ['ENV_AWS_AK'],
             aws_secret_access_key=os.environ['ENV_AWS_SK'],
+            config = client_config,
             )
     body = await request.json()
     streaming = True if body.get('stream') else False
