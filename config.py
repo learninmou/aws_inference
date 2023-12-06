@@ -5,7 +5,7 @@ logger = logging.getLogger(__name__)
 
 _last_time = time.time()
 _config_dict = {}
-def lazy_readconfig(file_path : str):
+async def lazy_readconfig(file_path : str):
     global _last_time, _config_dict
     cur_time = time.time()
     if file_path not in _config_dict or cur_time - _last_time > 30:
