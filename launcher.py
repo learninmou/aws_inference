@@ -42,11 +42,11 @@ def _check_auth(request : Request):
     return True
 
 _request_index = 0
-async def _fetch_endpoint(target_model : str):
+def _fetch_endpoint(target_model : str):
     if not target_model:
         return ''
     target_model = target_model.lower()
-    cadidates = await lazy_readconfig(os.environ['ENV_AWS_ENDPOINTS_FILE'])
+    cadidates = lazy_readconfig(os.environ['ENV_AWS_ENDPOINTS_FILE'])
     valid_endpoints = []
     for cadidate in cadidates:
         model, endpoint = cadidate.split(' ')
@@ -67,7 +67,7 @@ async def _fetch_endpoint(target_model : str):
 def startup_service():
     logger.info('service startup')
     # init config dict
-    asyncio.create_task(lazy_readconfig(os.environ['ENV_AWS_ENDPOINTS_FILE']))
+    lazy_readconfig(os.environ['ENV_AWS_ENDPOINTS_FILE'])
     _set_logger()
 
 @app.on_event('shutdown')
@@ -75,7 +75,7 @@ def shutdown_service():
     logger.info('service shutdown')
 
 @app.post("/v1/chat/completions")
-async def create_chat_completions(request : Request):
+def create_chat_completions(request : Request):
     if not _check_auth(request):
         return _INVALID_RESPONSE
 
@@ -86,11 +86,11 @@ async def create_chat_completions(request : Request):
             aws_secret_access_key=os.environ['ENV_AWS_SK'],
             config = client_config,
             )
-    body = await request.json()
+    body = asyncio.run(request.json())
     streaming = True if body.get('stream') else False
 
     model = body.get('model')
-    endpoint = await _fetch_endpoint(model)
+    endpoint = _fetch_endpoint(model)
     if not endpoint:
         return JSONResponse(status_code = status.HTTP_400_BAD_REQUEST,
                 content=jsonable_encoder({'ERROR': 'no valid endpoint for target model'}))

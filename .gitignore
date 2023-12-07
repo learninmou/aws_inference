@@ -1,3 +1,4 @@
+endpoints.ini
 run_server.sh
 *.swp
 __pycache__
